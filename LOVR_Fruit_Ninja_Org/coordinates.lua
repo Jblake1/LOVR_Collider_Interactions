@@ -8,7 +8,6 @@ function coordinates.draw(h)
   lovr.graphics.line(0,h,0,0,2,0)
   lovr.graphics.setColor(0, 0, 1) -- blue 
   lovr.graphics.line(0,h,0,0,h,1)
-
 end
 
 return coordinates

@@ -7,6 +7,11 @@ function sword.load(enviro)
     swordbox:setUserData("sword")
 end 
 
+function sword.pickup(hand_collider_position)
+
+   --local swordPosition 
+end
+
 
 function sword.draw(x1,y1,z1, sx1,sy1,sz1, angle1, ax1,ay1,az1)
     lovr.graphics.setColor(0.1, 0.5, 0.1)

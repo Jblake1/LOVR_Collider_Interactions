@@ -1,0 +1,4 @@
+If hands.holding[i].userData = sword 
+
+then get hand collider position 
+create joints with a specified part of sword 

@@ -1,3 +1,5 @@
+local collision = require('collision_override')
+
 local hands = { -- palms that can push and grab objects
   colliders = {nil, nil},     -- physical objects for palms
   touching  = {nil, nil},     -- the collider currently touched by each hand
@@ -13,12 +15,12 @@ function hands.load(enviro)
         hands.colliders[i]:setAngularDamping(0.3)
         hands.colliders[i]:setMass(0.1)
         hands.colliders[i]:setUserData('hand')
-        registerCollisionCallback(hands.colliders[i],
+        collision.registerCollisionCallback(hands.colliders[i],
         function(collider, world)
             -- store collider that was last touched by hand
             hands.touching[i] = collider
         end)
-    end  
+    end
 end
 
 function hands.update(time)
@@ -31,21 +33,30 @@ function hands.update(time)
         angle = ((angle + math.pi) % (2 * math.pi) - math.pi) -- for minimal motion wrap to (-pi, +pi) range
         hands.colliders[i]:applyTorque(vec3(ax, ay, az):mul(angle * time * 1))
         hands.colliders[i]:applyForce((vec3(rw:mul(0,0,0)) - vec3(vr:mul(0,0,0))):mul(time * 2000))
-        -- solidify when trigger touched
+        -- solidify when trigger touched 
         hands.solid[i] = lovr.headset.isDown(hand, 'trigger')
         hands.colliders[i]:getShapes()[1]:setSensor(not hands.solid[i])
-        -- hold/release colliders
+        -- hold colliders
+        --and hands.holding[i]:getUserData() == 'sword'
         if lovr.headset.isDown(hand, 'grip') and hands.touching[i] and not hands.holding[i] then
         hands.holding[i] = hands.touching[i]
         lovr.physics.newBallJoint(hands.colliders[i], hands.holding[i], vr:mul(0,0,0))
         lovr.physics.newSliderJoint(hands.colliders[i], hands.holding[i], quat(vr):direction())
         end
+        --grab objects
+        if lovr.headset.isDown(hand, 'grip') and hands.touching[i] and not hands.holding[i] then
+        hands.holding[i] = hands.touching[i]
+        lovr.physics.newBallJoint(hands.colliders[i], hands.holding[i], vr:mul(0,0,0))
+        lovr.physics.newSliderJoint(hands.colliders[i], hands.holding[i], quat(vr):direction())
+        end
+        -- release colliders
         if lovr.headset.wasReleased(hand, 'grip') and hands.holding[i] then
         for _,joint in ipairs(hands.colliders[i]:getJoints()) do
             joint:destroy()
         end
         hands.holding[i] = nil
         end
+
     end
 end
 
