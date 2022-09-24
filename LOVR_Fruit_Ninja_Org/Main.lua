@@ -1,12 +1,15 @@
-sword = require('sword')
-plane = require('plane')
-hands = require('hands')
-box = require('box')
-wball = require('wrecking_ball')
-motion = require('locamotion')
 
+local sword = require('sword')
+local plane = require('plane')
+local hands = require('hands')
+local box = require('box')
+local wball = require('wrecking_ball')
+--local motion = require('locamotion')
+
+local world
 local collisionCallbacks = {}
 local framerate = 1 / 72 -- fixed framerate is recommended for physics updates
+
 
 function lovr.load()
   world = lovr.physics.newWorld(0, -2, 0, false) -- low gravity and no collider sleeping
@@ -24,14 +27,26 @@ function lovr.load()
   --moving ball 
   --local ballPosition = vec3(-1, 2, -1)
   --local ball = world:newSphereCollider(ballPosition, 0.2)
-  --ball:setUserData(colliderColor)
-  
+  --ball:setUserData(colliderUserData)
+
     lovr.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 end
 
 
+function lovr.keypressed(key)
+  if key == 'space' then 
+    Hand_grabbing = true
+  end
+end
+
+function lovr.keyreleased(key)
+  if key == 'space' then 
+    Hand_grabbing = false
+  end
+end
+
+
 function lovr.update(dt)
-  
   -- override collision resolver to notify all colliders that have registered their callbacks
   world:update(framerate, function(world)
     world:computeOverlaps()
@@ -46,8 +61,11 @@ function lovr.update(dt)
     end
   end)
 
+  hands.update(dt)
+  --sword.update(dt)
+
   -- motion update (need to update hand colliders)!!!
-  motion.directionFrom = lovr.headset.isDown('left', 'trigger') and 'left' or 'head'
+ --[[  motion.directionFrom = lovr.headset.isDown('left', 'trigger') and 'left' or 'head'
   if lovr.headset.isDown('left', 'grip') then
     motion.flying = true
   elseif lovr.headset.wasReleased('left', 'grip') then
@@ -59,10 +77,7 @@ function lovr.update(dt)
     motion.snap(dt)
   else
     motion.smooth(dt)
-  end
-
-  hands.update(dt)
-  hands.touching = {nil, nil} -- to be set again in collision resolver
+  end ]]
 end
 
 
@@ -74,7 +89,7 @@ function lovr.draw()
 
   coordinates.draw(Height)
 
-  lovr.graphics.transform(mat4(motion.pose):invert())
+  --lovr.graphics.transform(mat4(motion.pose):invert())
 
   for i, collider in ipairs(world:getColliders()) do
     local shape = collider:getShapes()[1]
@@ -82,13 +97,13 @@ function lovr.draw()
     local x,y,z, angle, ax,ay,az = collider:getPose()
     if shapeType == 'box' then
       local sx, sy, sz = shape:getDimensions()
-      local colliderColor = collider:getUserData()
-      if colliderColor == 'plane' then
+      local colliderUserData = collider:getUserData()
+      if colliderUserData == 'plane' then
         plane.draw(x,y,z, sx,sy,sz, angle, ax,ay,az)
-      elseif colliderColor == 'hand' then
+      elseif colliderUserData == 'hand' then
         --need to insert motion impact on hand colliders through hand class
           hands.draw(x,y,z, sx,sy,sz, angle, ax,ay,az)
-      elseif colliderColor == 'sword' then
+      elseif colliderUserData == 'sword' then
         sword.draw(x,y,z, sx,sy,sz, angle, ax,ay,az)
       else
         box.draw(x,y,z, sx,sy,sz, angle, ax,ay,az)
@@ -100,6 +115,13 @@ function lovr.draw()
   end
 end
 
+
+function registerCollisionCallback(collider, callback)
+  collisionCallbacks = collisionCallbacks or {}
+  for _, shape in ipairs(collider:getShapes()) do
+    collisionCallbacks[shape] = callback
+  end
+end 
 
 
 
